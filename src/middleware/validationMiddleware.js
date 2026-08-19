@@ -1,13 +1,22 @@
-const validationMiddleware = (schema) => {
+const { badRequest } = require("../utils/apiError");
+
+const validationMiddleware = (schema, source = "body") => {
   return (req, res, next) => {
-    const { error } = schema.validate(req.body);
+    const { error, value } = schema.validate(req[source], {
+      abortEarly: false,
+      stripUnknown: true,
+    });
 
     if (error) {
-      return res.status(400).json({
-        success: false,
-        message: error.details[0].message,
-      });
+      return next(
+        badRequest(
+          "Validation failed",
+          error.details.map((e) => e.message)
+        )
+      );
     }
+
+    req[source] = value;
 
     next();
   };

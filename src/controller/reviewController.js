@@ -1,101 +1,151 @@
-const	express	=	require("express");
-
+const mongoose = require("mongoose");
 const reviewService = require("../service/reviewService");
-const { default: mongoose, mongo } = require("mongoose");
-const reviewController  =async	(req,	res)	=>	{
-try	{
-const	{	title,	comment,	rating,	reviewerName	}	=	req.body;
-const {alreadyReviewed , review} = await  reviewService.createReviewService({	title,	comment,	rating,	reviewerName	});
-if(alreadyReviewed){
-    return res.send(" you already reviewed it..");}
-res.send(review);
-}	catch	(err)	{
-console.log(err);
-res.status(500).send("internal	server	error");
-}
-}
 
-const getReviewsController = async	(req,	res)	=>	{
-try	{
-const	{	status,	page	=	1,	limit	=	10	}	=	req.query;
-const reviews = await reviewService.getReviewsService(req.query);
-res.send(reviews);
-}	catch	(err)	{
-res.status(500).send("error");
-}
-}
+const {
+  badRequest,
+  notFound,
+  conflict,
+} = require("../utils/apiError");
 
-const getReviewsById = async (req,res)=>{
-    try{
-     const id = req.params.id;
-     if(!mongoose.isValidObjectId(id)){
-        return res.status(400).send("Invalid Id");
-     }
+const createReviewController = async (req, res, next) => {
+  try {
+    const { title, comment, rating, reviewerName } = req.body;
 
-     const review = await  reviewService.getReviewId(id);
- if(!review){
-    return res.status(404).send("review not found..");
- }
- res.json(review);
-    }
-    catch(err){
-console.log(err);
-    }
-}
+    const   review  =
+      await reviewService.createReviewService({
+        title,
+        comment,
+        rating,
+        reviewerName,
+      });
 
-const deleteReviews =  async (req,res)=>{
-    try{
- const id = req.params.id;
- if(!mongoose.isValidObjectId(id)){
-    return res.status(400).send("invalid id..");
- }
- const {reviewExist , reviewDelete} = await reviewService.deleteReviews(id);
- if(!reviewExist){
-    return res.status(404).send("review not found");
- }
-
- res.status(200).send({
-    success:true,
-    message:"review deleted",
-    reviewDelete
- });
-    }
-    catch(err){
-        console.log(err);
-    }
-}
-
-const updateReviews = async (req,res)=>{
-    try{
- const id = req.params.id;
- if(!mongoose.isValidObjectId(id)){
-    return res.status(400).send("invalid id.. ");
- }
- const  { reviewExist , updateProduct} = await reviewService.updateReviews(req.body,id);
- if(!reviewExist){
-    return res.status(404).send("review not found");
- }
- res.status(200).send(updateProduct);
-    }
-    catch(err){
-        console.log(err);
-    }
-}
-
-const statusApprove = async (req,res)=>{
-    const id = req.params.id;
-    if(!mongoose.isValidObjectId(id)){
-        return res.status(400).send("invalid Id .. ");
-    }
-    const review = await reviewService.statusApprove(id);
-    if(!review){
-        return res.status(404).send(" review not found");
+    if (alreadyReviewed) {
+      throw conflict("You already reviewed it");
     }
 
-    res.send({
-        message:"staus  set to approved",
-        review,
+    res.status(201).json({
+      success: true,
+      data: review,
     });
+  } catch (err) {
+    next(err);
+  }
+};
 
-}
-module.exports = {reviewController , getReviewsController , getReviewsById , deleteReviews , updateReviews , statusApprove};
+const getReviewsController = async (req, res, next) => {
+  try {
+    const reviews = await reviewService.getReviewsService(req.query);
+
+    res.status(200).json({
+      success: true,
+      data: reviews,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getReviewsById = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.isValidObjectId(id)) {
+      throw badRequest("Invalid review id");
+    }
+
+    const review = await reviewService.getReviewId(id);
+
+    if (!review) {
+      throw notFound("Review not found");
+    }
+
+    res.status(200).json({
+      success: true,
+      data: review,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deleteReviews = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.isValidObjectId(id)) {
+      throw badRequest("Invalid review id");
+    }
+
+    const { reviewExist, reviewDelete } =
+      await reviewService.deleteReviews(id);
+
+    if (!reviewExist) {
+      throw notFound("Review not found");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Review deleted successfully",
+      data: reviewDelete,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateReviews = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.isValidObjectId(id)) {
+      throw badRequest("Invalid review id");
+    }
+
+    const { reviewExist, updateProduct } =
+      await reviewService.updateReviews(req.body, id);
+
+    if (!reviewExist) {
+      throw notFound("Review not found");
+    }
+
+    res.status(200).json({
+      success: true,
+      data: updateProduct,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const statusApprove = async (req, res, next) => {
+  try {
+    const id = req.params.id;
+
+    if (!mongoose.isValidObjectId(id)) {
+      throw badRequest("Invalid review id");
+    }
+
+    const review = await reviewService.statusApprove(id);
+
+    if (!review) {
+      throw notFound("Review not found");
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Status set to approved",
+      data: review,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  createReviewController,
+  getReviewsController,
+  getReviewsById,
+  deleteReviews,
+  updateReviews,
+  statusApprove,
+};

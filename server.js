@@ -4,10 +4,17 @@ const connectDB = require("./connectDB");
 const app=express();
 
 app.use(express.json());
+const { notFound, errorHandler } = require("./src/middleware/errorHandler");
+
 
 // Routes
 const reviewRoutes = require("./src/routes/reviewRoutes");
 app.use("/reviews", reviewRoutes);
+
+app.use(notFound);
+
+// Global error handler
+app.use(errorHandler);
 connectDB()
   .then(() => {
     app.listen(3000, () => {

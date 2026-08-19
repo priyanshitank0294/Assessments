@@ -1,115 +1,101 @@
+const	express	=	require("express");
+
 const reviewService = require("../service/reviewService");
+const { default: mongoose, mongo } = require("mongoose");
+const reviewController  =async	(req,	res)	=>	{
+try	{
+const	{	title,	comment,	rating,	reviewerName	}	=	req.body;
+const {alreadyReviewed , review} = await  reviewService.createReviewService({	title,	comment,	rating,	reviewerName	});
+if(alreadyReviewed){
+    return res.send(" you already reviewed it..");}
+res.send(review);
+}	catch	(err)	{
+console.log(err);
+res.status(500).send("internal	server	error");
+}
+}
 
-const createReview = async (req, res) => {
-  try {
-    const review = await reviewService.createReviewService(req.body);
+const getReviewsController = async	(req,	res)	=>	{
+try	{
+const	{	status,	page	=	1,	limit	=	10	}	=	req.query;
+const reviews = await reviewService.getReviewsService(req.query);
+res.send(reviews);
+}	catch	(err)	{
+res.status(500).send("error");
+}
+}
 
-    res.status(201).json({
-      success: true,
-      message: "Review created successfully",
-      data: review
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+const getReviewsById = async (req,res)=>{
+    try{
+     const id = req.params.id;
+     if(!mongoose.isValidObjectId(id)){
+        return res.status(400).send("Invalid Id");
+     }
 
-const getReviews = async (req, res) => {
-  try {
-    const reviews = await reviewService.getReviewsService(req.query);
+     const review = await  reviewService.getReviewId(id);
+ if(!review){
+    return res.status(404).send("review not found..");
+ }
+ res.json(review);
+    }
+    catch(err){
+console.log(err);
+    }
+}
 
-    res.status(200).json({
-      success: true,
-      data: reviews
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
+const deleteReviews =  async (req,res)=>{
+    try{
+ const id = req.params.id;
+ if(!mongoose.isValidObjectId(id)){
+    return res.status(400).send("invalid id..");
+ }
+ const {reviewExist , reviewDelete} = await reviewService.deleteReviews(id);
+ if(!reviewExist){
+    return res.status(404).send("review not found");
+ }
 
-const getSingleReview = async (req, res) => {
-  try {
-    const review = await reviewService.getSingleReviewService(req.query.id);
+ res.status(200).send({
+    success:true,
+    message:"review deleted",
+    reviewDelete
+ });
+    }
+    catch(err){
+        console.log(err);
+    }
+}
 
-    if (!review) {
-      return res.status(404).json({
-        success: false,
-        message: "Review not found"
-      });
+const updateReviews = async (req,res)=>{
+    try{
+ const id = req.params.id;
+ if(!mongoose.isValidObjectId(id)){
+    return res.status(400).send("invalid id.. ");
+ }
+ const  { reviewExist , updateProduct} = await reviewService.updateReviews(req.body,id);
+ if(!reviewExist){
+    return res.status(404).send("review not found");
+ }
+ res.status(200).send(updateProduct);
+    }
+    catch(err){
+        console.log(err);
+    }
+}
+
+const statusApprove = async (req,res)=>{
+    const id = req.params.id;
+    if(!mongoose.isValidObjectId(id)){
+        return res.status(400).send("invalid Id .. ");
+    }
+    const review = await reviewService.statusApprove(id);
+    if(!review){
+        return res.status(404).send(" review not found");
     }
 
-    res.status(200).json({
-      success: true,
-      data: review
+    res.send({
+        message:"staus  set to approved",
+        review,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
 
-const updateReview = async (req, res) => {
-  try {
-    const review = await reviewService.updateReviewService(
-      req.query.id,
-      req.body
-    );
-
-    if (!review) {
-      return res.status(404).json({
-        success: false,
-        message: "Review not found"
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Review updated successfully",
-      data: review
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-const deleteReview = async (req, res) => {
-  try {
-    const review = await reviewService.deleteReviewService(req.params.id);
-
-    if (!review) {
-      return res.status(404).json({
-        success: false,
-        message: "Review not found"
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Review deleted successfully"
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-};
-
-module.exports = {
-  createReview,
-  getReviews,
-  getSingleReview,
-  updateReview,
-  deleteReview
-};
+}
+module.exports = {reviewController , getReviewsController , getReviewsById , deleteReviews , updateReviews , statusApprove};

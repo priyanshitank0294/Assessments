@@ -1,47 +1,102 @@
-const ReviewModel = require("../model/reviewModel");
+const	express	=	require("express");
+const	ReviewModel	=	require("../model");
 
-const createReviewService = async (body) => {
-  return await ReviewModel.create(body);
-};
+const createReviewService = async (data)=>{
+  try  {
+    const {	title,	comment,	rating,	reviewerName	} = data;
+    const	alreadyReviewed	=	await	ReviewModel.findOne({	reviewerName,	title	});
+if	(alreadyReviewed)	{
+return	null;
+}
+const	review	=	await	ReviewModel.create({
+title,	comment,	rating,	reviewerName,
+});
+ return {alreadyReviewed , review}}
+catch(err){
+    console.log(err);
+}
+}
 
-const getReviewsService = async (query) => {
-  const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 10;
+const getReviewsService = async (data)=>{
+try{
+    const {	status,	page	=	1,	limit	=	10	} = data;
+const	filter	=	{};
+if	(status)	filter.status	=	status;
+const	reviews	=	await	ReviewModel.find(filter)
+.skip((page	-	1)	*	limit)
+.limit(limit);
 
-  const reviews = await ReviewModel.find()
-    .skip((page - 1) * limit)
-    .limit(limit);
+return {reviews};
+}
+catch(err){
+    console.log(err);
+}
+}
 
-  const total = await ReviewModel.countDocuments();
+const getReviewId = async(id)=>{
+    try{
+     const review = await ReviewModel.findById(id);
 
-  return {
-    total,
-    page,
-    limit,
-    reviews
-  };
-};
+     if(!review){
+        return null;
+     }
 
-const getSingleReviewService = async (id) => {
-  return await ReviewModel.findById(id);
-};
+     return {review};
+    }
+    catch(err){
+        console.log(err);
+    }
+}
 
-const updateReviewService = async (id, body) => {
-  return await ReviewModel.findByIdAndUpdate(
-    id,
-    body,
-    { new: true }
-  );
-};
+const deleteReviews = async (id) =>{
+    try{
+   const reviewExist = await ReviewModel.findById(id);
+   if(!reviewExist){
+    return null;
+    throw new Error("review not exist");
+   }
+   const reviewDelete = await ReviewModel.findByIdAndDelete(id);
 
-const deleteReviewService = async (id) => {
-  return await ReviewModel.findByIdAndDelete(id);
-};
+   return {reviewExist , reviewDelete} ;
 
-module.exports = {
-  createReviewService,
-  getReviewsService,
-  getSingleReviewService,
-  updateReviewService,
-  deleteReviewService
-};
+    }
+    catch(err){
+        console.log(err);
+    }
+}
+const updateReviews = async (data , id)=>{
+    try{
+       const  reviewExist = await ReviewModel.findById(id);
+       if(!reviewExist){
+        return null;
+       }
+       const updateProduct = await ReviewModel.findByIdAndUpdate(id , data,{
+        returnDocument:"after",
+        runValidators:true,
+       });
+       return { reviewExist , updateProduct};
+
+    }
+    catch(err){
+console.log(err);
+    }
+}
+
+const statusApprove = async (id)=>{
+try{
+ const review = await ReviewModel.findById(id);
+ if(!review){
+    return null;
+ }
+ if(review.status === "approved"){
+     throw new Error("status is already approved");
+ }
+ review.status = "approved";
+ await review.save();
+ return {review};
+}
+catch(err){
+    console.log(err);
+}
+}
+module.exports = {createReviewService , getReviewsService , getReviewId , deleteReviews , updateReviews , statusApprove};

@@ -1,43 +1,45 @@
 const express = require("express");
-const router = express.Router();
 
 const reviewController = require("../controller/reviewController");
-const {
-  createReviewSchema,
-  updateReviewSchema,
-} = require("../validationSchema/reviewValidation");
+const validationSchema = require("../validationSchema/reviewValidation");
 const validationMiddleware = require("../middleware/validationMiddleware");
 
-// Create Review
+const router = express.Router();
+
 router.post(
   "/createReview",
-   validationMiddleware(createReviewSchema),
-  reviewController.createReview
+  validationMiddleware(validationSchema.createReviewSchema),
+  reviewController.reviewController
 );
 
-// Get All Reviews
 router.get(
   "/getReviews",
-  reviewController.getReviews
+  validationMiddleware(validationSchema.getReviewSchema),
+  reviewController.getReviewsController
 );
 
-// Get Single Review
-router.get(
-  "/getSingleReview",
-  reviewController.getSingleReview
-);
-
-// Update Review
 router.patch(
-  "/updateReview",
-   validationMiddleware(updateReviewSchema),
-  reviewController.updateReview
+  "/updateReviews/:id",
+  validationMiddleware(validationSchema.updateReviewSchema),
+  reviewController.updateReviews
 );
 
-// Delete Review
+router.get(
+  "/getReviews/:id",
+  validationMiddleware(validationSchema.reviewIdSchema),
+  reviewController.getReviewsById
+);
+
 router.delete(
-  "/deleteReview/:id",
-  reviewController.deleteReview
+  "/deleteReviews/:id",
+  validationMiddleware(validationSchema.reviewIdSchema),
+  reviewController.deleteReviews
+);
+
+router.patch(
+  "/reviews/:id/approve",
+  validationMiddleware(validationSchema.reviewIdSchema),
+  reviewController.statusApprove
 );
 
 module.exports = router;

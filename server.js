@@ -11,6 +11,10 @@ const { notFound, errorHandler } = require("./src/middleware/errorHandler");
 const reviewRoutes = require("./src/routes/reviewRoutes");
 app.use("/reviews", reviewRoutes);
 
+const staffRouter = require("./src/routes/staffRoute");
+
+app.use("/staff", staffRouter);
+
 app.use(notFound);
 
 // Global error handler
